@@ -9,7 +9,7 @@ room_humidity = {
 }
 
 def generate_humidity(room, hour, temperature, noise=2.0):
-    behaviour = room_humidity(room)
+    behaviour = room_humidity[room]
     
     # Temperature-Humidity correlation: higher humidity when warmer
     t_h = -0.5*(temperature-20)

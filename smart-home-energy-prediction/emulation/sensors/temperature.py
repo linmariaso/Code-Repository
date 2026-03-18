@@ -14,7 +14,7 @@ room_temperature= {
 }
 
 def generate_temp(room, hour,day_of_week,noise=0.5):
-    behaviour = room_temperature(room)
+    behaviour = room_temperature[room]
     # Coolest 5am, warmest 3pm
     day = behaviour['amplitude']*np.sin((hour-5)*np.pi/12)
 
