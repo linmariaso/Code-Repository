@@ -1,7 +1,7 @@
 import numpy as np
-from config import settings
+from config.settings import r_seed
 
-np.random.seed(settings.random_seed)
+np.random.seed(r_seed)
 
 # Baselines by room
 
@@ -13,7 +13,7 @@ room_temperature= {
     'studio':       {'base':20.5,'amplitude':2.0},
 }
 
-def generate_temp(room, hour,day_of_week,noise=0.5):
+def generate_temperature(room, hour,day_of_week,noise=0.5):
     behaviour = room_temperature[room]
     # Coolest 5am, warmest 3pm
     day = behaviour['amplitude']*np.sin((hour-5)*np.pi/12)

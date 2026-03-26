@@ -1,4 +1,5 @@
 import numpy as np
+from config.settings import r_seed, anomaly_rate_active, anomaly_rate_inactive
 
 appliance_power = {
     'washing_machine':  {'base': 0, 'active': 500, 'always_on': False},

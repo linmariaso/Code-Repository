@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+from datetime import timedelta
+from config.settings import output_dir, rooms, appliances, days_to_generate, sample_freq, start_time
 # Summary Statistics
 def test_summary_stats(df):
   """Print summary statistics and check against expectations."""
@@ -109,7 +111,7 @@ def test_time_patterns(df):
     ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    plt.savefig(f'temporal_profiles.png', dpi=150)
+    plt.savefig(f'{output_dir}temporal_profiles.png', dpi=150)
     plt.close()
     print("  Saved: temporal_profiles.png")
 
@@ -169,7 +171,7 @@ def test_weekday_weekend(df):
     ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    plt.savefig(f'weekday_weekend.png', dpi=150)
+    plt.savefig(f'{output_dir}weekday_weekend.png', dpi=150)
     plt.close()
     print("  Saved: weekday_weekend.png")
 
@@ -206,7 +208,7 @@ def test_correlations(df):
     plt.colorbar(im, ax=ax, shrink=0.8)
     ax.set_title('Feature Correlation Matrix')
     plt.tight_layout()
-    plt.savefig(f'correlation_heatmap.png', dpi=150)
+    plt.savefig(f'{output_dir}correlation_heatmap.png', dpi=150)
     plt.close()
     print("  Saved: correlation_heatmap.png")
 
@@ -260,7 +262,7 @@ def test_full_timeseries(df):
                            alpha=0.1, color='blue')
 
     plt.tight_layout()
-    plt.savefig(f'full_timeseries.png', dpi=150)
+    plt.savefig(f'{output_dir}full_timeseries.png', dpi=150)
     plt.close()
     print("  Saved: full_timeseries.png")
 

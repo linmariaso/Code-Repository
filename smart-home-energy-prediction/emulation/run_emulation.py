@@ -5,18 +5,14 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 from datetime import timedelta, datetime
+from emulation.sensors.temperature import generate_temperature
+from emulation.sensors.humidity import generate_humidity
+from emulation.sensors.occupancy import generate_occupancy
+from emulation.sensors.smart_plug import generate_power, apply_anomalies
+from emulation.sensor_tests import test_summary_stats, test_time_patterns, test_weekday_weekend, test_correlations, test_full_timeseries, test_all_appliances
+from ..config.settings import r_seed, intervals, output_dir, rooms, appliances, days_to_generate, sample_freq, start_time, anomaly_rate_active, anomaly_rate_inactive
 
-output_dir = 'results/sensor-tests'
-r_seed= 42
-rooms = ['bedroom','living_room','bathroom','kitchen','studio']
-appliances = ['washing_machine','refrigerator','television','microwave','kettle','computer','dishwasher','lighting']
-days_to_generate = 730
-sample_freq = 5 #minutes
-start_time = datetime(2023,1,1,0,0)
-intervals = days_to_generate *24 * (60//sample_freq)
-anomaly_rate = 0.20
-anomaly_rate_active = 0.10
-anomaly_rate_inactive = 0.015
+
 records = []
 np.random.seed(r_seed)
 os.makedirs(output_dir, exist_ok=True)
@@ -31,7 +27,7 @@ for i in range (intervals):
   temperatures = {}
   humidities = {}
   for room in rooms:
-    t = generate_temp(room, hour, day_of_week)
+    t = generate_temperature(room, hour, day_of_week)
     temperatures[room] = t
     humidities[room] = generate_humidity(room, hour, t)
 
@@ -69,7 +65,7 @@ for i in range (intervals):
   completeness = test_summary_stats(df)
   test_time_patterns(df)
   test_weekday_weekend(df)
-  passed, total = test_physical_consistency(df)
+  passed, total = test_all_appliances(df)
   test_correlations(df)
   test_full_timeseries(df)
   test_all_appliances(df)

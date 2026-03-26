@@ -1,9 +1,18 @@
 # Configuration File
+from datetime import datetime
 
+#Output directory
+output_dir = 'results/'
 # Emulation Parameters
 rooms = ['bedroom','living_room','bathroom','kitchen','studio']
-collection_days = 10
-random_seed = 42
+days_to_generate = 730
+sample_freq = 5 #minutes
+start_time = datetime(2023,1,1,0,0)
+intervals = days_to_generate *24 * (60//sample_freq)
+anomaly_rate = 0.20
+anomaly_rate_active = 0.10
+anomaly_rate_inactive = 0.015
+r_seed = 42
 
 # Sensor intervals (Seconds)
 temp_interval = 30
