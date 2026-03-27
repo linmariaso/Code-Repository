@@ -1,8 +1,5 @@
 #Generate occupancy, temperature, humidity and appliances
 
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
 import argparse
 import subprocess
 import sys
