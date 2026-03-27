@@ -1,4 +1,6 @@
 # Configuration File
+import os
+import numpy as np
 from datetime import datetime
 
 #Output directory
@@ -13,7 +15,8 @@ anomaly_rate = 0.20
 anomaly_rate_active = 0.10
 anomaly_rate_inactive = 0.015
 r_seed = 42
-
+np.random.seed(r_seed)
+os.makedirs(output_dir, exist_ok=True)
 # Sensor intervals (Seconds)
 temp_interval = 30
 hum_interval = 30

@@ -5,16 +5,16 @@ import logging
 import datetime
 import paho.mqtt.client as mqtt
 from config.settings import (
-    MQTT_BROKER, MQTT_PORT, MQTT_TOPIC_PREFIX,
-    ROOMS, APPLIANCES,
-    TEMP_INTERVAL, HUMIDITY_INTERVAL,
-    OCCUPANCY_INTERVAL, SMART_PLUG_INTERVAL,
-    COLLECTION_DAYS, RANDOM_SEED
+    mqtt_broker, mqtt_port, mqtt_topic_prefix,
+    rooms, appliances,
+    temp_interval, hum_interval,
+    occ_interval, sp_interval,
+    days_to_generate, r_seed
 )
 from emulation.sensors.temperature import generate_temperature
 from emulation.sensors.humidity import generate_humidity
 from emulation.sensors.occupancy import generate_occupancy
-from emulation.sensors.smart_plug import generate_appliance_power
+from emulation.sensors.smart_plug import generate_power
 
 logging.basicConfig(
     level=logging.INFO,
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 def on_connect(client, userdata, flags, rc):
     """Callback when the client connects to the broker."""
     if rc == 0:
-        logger.info("Connected to MQTT broker at %s:%s", MQTT_BROKER, MQTT_PORT)
+        logger.info("Connected to MQTT broker at %s:%s", mqtt_broker, mqtt_port)
     else:
         logger.error("Connection failed with code %d", rc)
 
@@ -54,7 +54,7 @@ def create_mqtt_client():
     # Optional: set a Last Will & Testament so the subscriber knows
     # if the publisher goes offline unexpectedly
     client.will_set(
-        f"{MQTT_TOPIC_PREFIX}/status",
+        f"{mqtt_topic_prefix}/status",
         payload=json.dumps({"status": "offline", "timestamp": ""}),
         qos=1,
         retain=True
@@ -68,7 +68,7 @@ def publish_reading(client, room, sensor_type, value, timestamp_str):
     Topic format: home/{room}/{sensor_type}
     Payload: JSON with timestamp, room, sensor_type, value
     """
-    topic = f"{MQTT_TOPIC_PREFIX}/{room}/{sensor_type}"
+    topic = f"{mqtt_topic_prefix}/{room}/{sensor_type}"
     payload = json.dumps({
         'timestamp': timestamp_str,
         'room': room,
@@ -86,7 +86,7 @@ def publish_appliance_reading(client, room, appliance, value, timestamp_str):
 
     Topic format: home/{room}/appliance/{appliance_name}
     """
-    topic = f"{MQTT_TOPIC_PREFIX}/{room}/appliance/{appliance}"
+    topic = f"{mqtt_topic_prefix}/{room}/appliance/{appliance}"
     payload = json.dumps({
         'timestamp': timestamp_str,
         'room': room,
@@ -104,7 +104,7 @@ def run_emulation(client, mode='simulated'):
     """
     Main emulation loop.
 
-    mode='simulated' — Steps through 7 days of data as fast as
+    mode='simulated' — Steps through 2 years of data as fast as
         possible, publishing one reading per simulated interval.
         Use this for your dissertation (fast, deterministic).
 
@@ -112,11 +112,11 @@ def run_emulation(client, mode='simulated'):
         Use this to demonstrate live MQTT behaviour.
     """
     import numpy as np
-    np.random.seed(RANDOM_SEED)
+    np.random.seed(r_seed)
 
     # Announce that the publisher is online
     client.publish(
-        f"{MQTT_TOPIC_PREFIX}/status",
+        f"{mqtt_topic_prefix}/status",
         json.dumps({"status": "online",
                      "timestamp": datetime.datetime.now().isoformat()}),
         qos=1, retain=True
@@ -125,14 +125,14 @@ def run_emulation(client, mode='simulated'):
     # We use the smallest interval (SMART_PLUG_INTERVAL = 5s) as the
     # simulation tick, and only fire other sensors when their interval
     # has elapsed.
-    tick_seconds = SMART_PLUG_INTERVAL
-    total_seconds = COLLECTION_DAYS * 24 * 3600
+    tick_seconds = sp_interval
+    total_seconds = days_to_generate * 24 * 3600
     total_ticks = total_seconds // tick_seconds
 
-    start_date = datetime.datetime(2025, 1, 6, 0, 0, 0)  # A Monday
+    start_date = datetime.datetime(2023, 1, 1, 0, 0, 0)
 
     logger.info("Starting emulation: %d days, %d ticks (tick=%ds)",
-                COLLECTION_DAYS, total_ticks, tick_seconds)
+                days_to_generate, total_ticks, tick_seconds)
 
     for tick in range(total_ticks):
         elapsed = tick * tick_seconds
@@ -142,21 +142,21 @@ def run_emulation(client, mode='simulated'):
         day_of_week = current_time.weekday()
         is_weekend = day_of_week >= 5
 
-        for room in ROOMS:
+        for room in rooms:
             # --- Temperature (every TEMP_INTERVAL seconds) ---
-            if elapsed % TEMP_INTERVAL == 0:
+            if elapsed % temp_interval == 0:
                 temp = generate_temperature(room, hour, day_of_week)
                 publish_reading(client, room, 'temperature', temp, ts_str)
 
             # --- Humidity (every HUMIDITY_INTERVAL seconds) ---
-            if elapsed % HUMIDITY_INTERVAL == 0:
+            if elapsed % hum_interval == 0:
                 # Need current temperature for correlation
                 temp_for_humidity = generate_temperature(room, hour, day_of_week)
                 hum = generate_humidity(room, hour, temp_for_humidity)
                 publish_reading(client, room, 'humidity', hum, ts_str)
 
             # --- Occupancy (every OCCUPANCY_INTERVAL seconds) ---
-            if elapsed % OCCUPANCY_INTERVAL == 0:
+            if elapsed % occ_interval == 0:
                 occ = generate_occupancy(room, hour, is_weekend)
                 publish_reading(client, room, 'occupancy', occ, ts_str)
 
@@ -164,11 +164,11 @@ def run_emulation(client, mode='simulated'):
             # Determine if *any* room is occupied (for appliances
             # that depend on someone being home)
             is_anyone_home = any(
-                generate_occupancy(r, hour, is_weekend) for r in ROOMS
+                generate_occupancy(r, hour, is_weekend) for r in rooms
             )
 
-            for appliance in APPLIANCES:
-                power = generate_appliance_power(
+            for appliance in appliances:
+                power = generate_power(
                     appliance, hour, is_anyone_home
                 )
                 publish_appliance_reading(
@@ -191,7 +191,7 @@ def run_emulation(client, mode='simulated'):
 
     # Announce completion
     client.publish(
-        f"{MQTT_TOPIC_PREFIX}/status",
+        f"{mqtt_topic_prefix}/status",
         json.dumps({"status": "complete",
                      "total_messages": msg_count,
                      "timestamp": datetime.datetime.now().isoformat()}),
@@ -204,14 +204,14 @@ def run_emulation(client, mode='simulated'):
 if __name__ == '__main__':
     client = create_mqtt_client()
     try:
-        client.connect(MQTT_BROKER, MQTT_PORT, keepalive=60)
+        client.connect(mqtt_broker, mqtt_port, keepalive=60)
         client.loop_start()  # Background thread for network I/O
         run_emulation(client, mode='simulated')
     except ConnectionRefusedError:
         logger.error(
             "Could not connect to broker at %s:%s. "
             "Is Mosquitto running? Start it with: mosquitto -v",
-            MQTT_BROKER, MQTT_PORT
+            mqtt_broker, mqtt_port
         )
     except KeyboardInterrupt:
         logger.info("Emulation interrupted by user.")
