@@ -143,24 +143,24 @@ def run_emulation(client, mode='simulated'):
         is_weekend = day_of_week >= 5
 
         for room in rooms:
-            # --- Temperature (every TEMP_INTERVAL seconds) ---
+            # --- Temperature (every temp_interval seconds) ---
             if elapsed % temp_interval == 0:
                 temp = generate_temperature(room, hour, day_of_week)
                 publish_reading(client, room, 'temperature', temp, ts_str)
 
-            # --- Humidity (every HUMIDITY_INTERVAL seconds) ---
+            # --- Humidity (every hum_interval seconds) ---
             if elapsed % hum_interval == 0:
                 # Need current temperature for correlation
                 temp_for_humidity = generate_temperature(room, hour, day_of_week)
                 hum = generate_humidity(room, hour, temp_for_humidity)
                 publish_reading(client, room, 'humidity', hum, ts_str)
 
-            # --- Occupancy (every OCCUPANCY_INTERVAL seconds) ---
+            # --- Occupancy (every occ_interval seconds) ---
             if elapsed % occ_interval == 0:
                 occ = generate_occupancy(room, hour, is_weekend)
                 publish_reading(client, room, 'occupancy', occ, ts_str)
 
-            # --- Smart Plugs (every tick = SMART_PLUG_INTERVAL) ---
+            # --- Smart Plugs (every tick = sp_interval) ---
             # Determine if *any* room is occupied (for appliances
             # that depend on someone being home)
             is_anyone_home = any(
