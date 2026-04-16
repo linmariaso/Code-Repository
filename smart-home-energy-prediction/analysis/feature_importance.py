@@ -9,7 +9,8 @@ Output includes:
 - results/importance_heatmap.png
 
 Usage:
-
+    from analysis.feature_importance import run_permutation_importance
+    all_importance = run_permutation_importance(trained_res, X_test, y_test, feature_cols)
     Standalone:
     python -m analysis.feature_importance
 """
@@ -136,3 +137,41 @@ def plot_importance_heatmap(all_importance, output_path=res_dir):
     plt.close()
     logger.info(f"Saved importance heatmap to {output_path}")
 
+def save_importance_data(all_importance, output_path=res_dir):
+    rows = []
+    for model_name, importance in all_importance.items():
+        for item in importance:
+            rows.append({
+                'model': item['model'],
+                'feature': item['feature'],
+                'rank': item['rank'],
+                'mean_importance': round(item['mean_importance'], 6),
+                'std_importance': round(item['std_importance'], 6),
+                't_stat': round(item['t_stat'], 4),
+                'p_value': round(item['p_value'], 6),
+                'significant': item['significant']
+            })
+    df = pd.DataFrame(rows)
+    df.to_csv(os.path.join(output_path, 'permutation_importance.csv'), index=False)
+    logger.info(f"Saved permutation importance data to {output_path}")
+    return df
+
+if __name__ == "__main__":
+    from pipeline.split import load_split
+    from models.train import load_models
+
+    print("Loading test data and trained models")
+    X_train, y_train, X_test, y_test, scaler, feature_cols = load_split(proc_dir)
+    trained_res = load_models(res_dir)
+    all_importance = run_permutation_importance(trained_res, X_test, y_test, feature_cols)
+    save_importance_data(all_importance, res_dir)
+    plot_importance_bars(all_importance, res_dir)
+    plot_importance_heatmap(all_importance, res_dir)
+
+    print("Feature importance summary:")
+    for model_name, importance in all_importance.items():
+        print(f"  {model_name}:")
+        for item in importance:
+            sig = " (significant)" if item['significant'] else ""
+            print(f"    #{item['rank']} {item['feature']}: {item['mean_importance']:.4f} (±{item['std_importance']:.3f}){sig}")
+    print(f"\nResults saved to {res_dir}/permutation_importance.csv and plots in {res_dir}/")

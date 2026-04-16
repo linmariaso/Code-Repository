@@ -1,4 +1,12 @@
+"""
+Normalise features, split into train/test sets, and save for modeling, using a temporal split to preserve time series integrity. The test set is the most recent 20% of the data, ensuring models are evaluated on future data. StandardScaler is used for feature scaling, and all splits and scaler objects are saved for reproducibility.
+Usage:
+    from pipeline.split import prepare_data, save_split
+    X_train, y_train, X_test, y_test, scaler, feature_cols = prepare_data(df_features)
+    Standalone:
+    python -m pipeline.split
 
+"""
 import os
 import logging
 import pickle

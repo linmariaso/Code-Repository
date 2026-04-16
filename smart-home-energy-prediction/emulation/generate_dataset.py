@@ -1,3 +1,18 @@
+"""
+Generate synthetic dataset for smart home energy prediction, including occupancy, temperature, humidity, and appliance power consumption. The dataset is generated based on realistic patterns and correlations between variables. The generated dataset is saved as a CSV file and undergoes a series of tests to ensure its quality and realism.
+The dataset includes:
+- Timestamp, hour, day of week, and weekend indicator
+- Temperature and humidity for each room
+- Occupancy status for each room
+- Power consumption for each appliance
+- Derived features like mean temperature, mean humidity, occupancy count, active appliances, and total power
+Output:
+- A CSV file containing the synthetic dataset
+Usage:
+    from emulation.generate_dataset import generate_dataset
+    Standalone:
+    python -m emulation.generate_dataset
+"""
 import pandas as pd
 import numpy as np
 from datetime import timedelta

@@ -1,5 +1,15 @@
-#Generate occupancy, temperature, humidity and appliances
+"""
+Run emulation for smart home energy prediction. This script can generate a synthetic dataset or run a real-time MQTT emulation, optionally launching a subscriber process to consume the published messages. It also includes comprehensive testing of the generated dataset to ensure quality and consistency.
+Usage:
+    # Run publisher only (subscriber running separately):
+    python -m emulation.run_emulation
 
+    # Run both publisher and subscriber together:
+    python -m emulation.run_emulation --with-subscriber
+
+    # Real-time mode (publishes at actual sensor intervals):
+    python -m emulation.run_emulation --realtime
+"""
 import argparse
 import subprocess
 import sys

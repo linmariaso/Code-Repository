@@ -1,4 +1,16 @@
-
+"""
+MQTT subscriber for smart home energy prediction. This script connects to the MQTT broker, subscribes to sensor data topics, and writes incoming messages to daily CSV files in a thread-safe manner. It also logs statistics about the received messages and handles graceful shutdown on termination signals.
+Features:
+- Dynamic file management: Each day gets its own CSV file with appropriate headers
+- Thread-safe writing to files and statistics tracking
+- Periodic logging of message counts, rates, and errors
+- Graceful shutdown with final statistics summary
+- Handles broker status messages
+Usage:
+    from pipeline.subscriber import main
+    Standalone:
+    python -m pipeline.subscriber
+"""
 import json
 import csv
 import os

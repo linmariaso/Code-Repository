@@ -1,3 +1,20 @@
+"""
+Loads raw CSV files, preprocesses the data by pivoting to wide format, resampling, and engineering features. The processed datasets are saved for use in model training and evaluation.
+
+Key steps:
+1. Load all raw CSV files from the data/raw directory.
+2. Parse timestamps and numeric values, handling any malformed records.
+3. Resample data to a consistent frequency (e.g., 5 minutes) and pivot to wide format with separate columns for each sensor type and room/appliance.
+4. Engineer additional features such as hour of day, day of week, mean temperature, occupancy count, and total power consumption.
+5. Save the processed datasets to data/processed for downstream modeling.
+Output:
+- data/processed/wide_data.csv: The resampled and pivoted dataset in wide format
+Usage:
+    from pipeline.preprocess import run_preprocessing
+    df_features = run_preprocessing()
+    Standalone:
+    python -m pipeline.preprocess
+"""
 import os
 import glob
 import logging

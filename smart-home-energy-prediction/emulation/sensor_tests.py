@@ -1,3 +1,23 @@
+"""
+Sensor Tests for Smart Home Energy Prediction
+This module contains functions to test the quality and consistency of the generated sensor data.
+Test includes:
+1. Summary statistics: Check ranges and distributions of each sensor type.
+2. Temporal patterns: Plot 24-hour average profiles for temperature, humidity, occupancy, and power.
+3. Weekday vs weekend: Compare patterns between weekdays and weekends.
+4. Correlations: Generate correlation heatmap for engineered features.
+5. Full time series: Plot the entire time series to visually inspect for anomalies or unrealistic patterns.
+6. Appliance realism: Check if appliance power readings match expected behavior (e.g., kettle should have spikes during morning/evening, low standby power, etc.)
+Usage:
+    from emulation.sensor_tests import test_summary_stats, test_time_patterns, test_weekday_weekend, test_correlations, test_full_timeseries
+    test_summary_stats(df)
+    test_time_patterns(df)
+    test_weekday_weekend(df)
+    test_correlations(df)
+    test_full_timeseries(df)
+    Standalone:
+    python -m emulation.sensor_tests
+"""
 import matplotlib.pyplot as plt
 from datetime import timedelta
 from config.settings import output_dir, rooms, appliances, days_to_generate, sample_freq, start_time

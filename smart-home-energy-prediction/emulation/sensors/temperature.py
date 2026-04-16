@@ -1,3 +1,16 @@
+"""
+Temperature sensor emulation for smart home energy prediction project.
+This module generates realistic temperature readings for different rooms based on time of day, day of week, and typical human activities. It incorporates:
+- Room-specific base temperatures and daily patterns
+- Time-of-day patterns (e.g., cooler in early morning, warmer in afternoon)
+- Activity-based boosts (e.g., warmer in kitchen during meal times, bathroom in mornings/evenings)
+- Random noise for variability
+Usage:
+    from emulation.sensors.temperature import generate_temperature
+    temperature = generate_temperature(room, hour, day_of_week)
+    Standalone:
+    python -m emulation.sensors.temperature
+"""
 import numpy as np
 from config.settings import r_seed
 

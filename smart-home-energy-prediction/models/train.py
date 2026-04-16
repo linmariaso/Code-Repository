@@ -1,3 +1,16 @@
+"""
+Train and tune regression models for energy consumption prediction. This module includes functions to train individual models with optional hyperparameter tuning, train all specified models, and save/load trained models and results. Models include Linear Regression, Random Forest, and MLP Regressor. Training times and CV scores are logged for performance comparison.
+Models:
+1. Linear Regression (no hyperparameters)
+2. Random Forest Regressor (n_estimators, max_depth, min_samples_split)
+3. MLP Regressor (hidden_layer_sizes, activation, learning_rate_init)
+Each model with the exception of Linear Regression undergoes GridSearchCV for hyperparameter tuning. Results are saved in 'results/trained_models.pkl' and individual model files. 
+Usage:
+    from models.train import train_all_models, save_models
+    results = train_all_models(X_train, y_train)
+    Standalone:
+    python -m models.train
+"""
 import os
 import time
 import pickle

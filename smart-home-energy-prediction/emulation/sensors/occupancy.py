@@ -1,3 +1,15 @@
+"""
+Occupancy sensor emulation based on time of day and day of week for every room.
+This module generates realistic occupancy patterns for different rooms in a smart home. It incorporates:
+- Room-specific occupancy probabilities based on typical human behavior
+- Time-of-day patterns (e.g., higher occupancy in living room evenings, bedroom at night)
+- Weekday vs weekend differences (e.g., more daytime occupancy on weekends)
+Usage:
+    from emulation.sensors.occupancy import generate_occupancy
+    occupancy = generate_occupancy(room, hour, is_weekend)
+    Standalone:
+    python -m emulation.sensors.occupancy
+"""
 import numpy as np
 
 prob_weekend_occupancy = {

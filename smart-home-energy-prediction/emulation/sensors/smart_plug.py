@@ -1,3 +1,17 @@
+"""
+Smart Plug Power Consumption Simulation for eight different appliances.
+This module simulates power consumption patterns for common household appliances based on:
+- Time of day and day of week (e.g., higher TV usage in evenings, more computer use on weekdays)
+- Occupancy (appliances more likely to be active when someone is home)
+- Correlation with other sensors (e.g., higher power when occupancy is detected)
+- Anomalies (random spikes in power usage, phantom loads when off)
+Usage:
+    from emulation.sensors.smart_plug import generate_power, apply_anomalies
+    power = generate_power(appliance, hour, occupancy, is_weekend)
+    power_with_anomalies = apply_anomalies(appliance, power)
+    Standalone:
+    python -m emulation.sensors.smart_plug
+"""
 import numpy as np
 from config.settings import r_seed, anomaly_rate_active, anomaly_rate_inactive
 

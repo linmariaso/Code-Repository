@@ -1,4 +1,19 @@
-
+"""
+MQTT Publisher for Smart Home Sensor Data
+This module simulates a smart home environment by generating synthetic sensor data for temperature, humidity, occupancy, and power consumption of various appliances. It publishes this data to an MQTT broker in real-time or as fast as possible for testing and demonstration purposes.
+Features:
+- Realistic sensor data generation based on time of day, room characteristics, and typical human behavior
+- MQTT client with connection handling, message publishing, and status updates
+- Configurable intervals for each sensor type
+- Progress logging and final statistics on messages published
+Topic structure:
+- home/{room}/{sensor_type} for temperature, humidity, occupancy
+- home/{room}/appliance/{appliance_name} for smart plug power readings
+Usage:
+    from emulation.mqtt_publisher import run_emulation
+    Standalone:
+    python -m emulation.mqtt_publisher
+"""
 import json
 import time
 import logging

@@ -258,7 +258,7 @@ if __name__ == "__main__":
     from models.train import load_models
 
     print("Loading test data and trained models")
-    X_train, X_test, y_train, y_test, scaler, feature_cols = load_split(proc_dir)
+    X_train, y_train, X_test, y_test, scaler, feature_cols = load_split(proc_dir)
     trained_res = load_models(res_dir)
 
     print(f"Test data: {X_test.shape[0]} records, {X_test.shape[1]} features")

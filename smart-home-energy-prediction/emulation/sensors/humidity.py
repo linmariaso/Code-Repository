@@ -1,3 +1,16 @@
+"""
+Humidity sensor emulation for smart home energy prediction project.
+This module generates realistic humidity readings for different rooms based on time of day, temperature, and typical human activities. It incorporates:
+- Room-specific base humidity levels and daily patterns
+- Correlation with temperature (higher humidity when warmer)
+- Activity-based boosts (e.g., higher humidity in kitchen during meal times, bathroom in mornings/evenings)
+- Random noise for variability
+Usage:
+    from emulation.sensors.humidity import generate_humidity
+    humidity = generate_humidity(room, hour, temperature)
+    Standalone:
+    python -m emulation.sensors.humidity
+"""
 import numpy as np
 
 room_humidity = {
