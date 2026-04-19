@@ -2,11 +2,14 @@
 Loads raw CSV files, preprocesses the data by pivoting to wide format, resampling, and engineering features. The processed datasets are saved for use in model training and evaluation.
 
 Key steps:
-1. Load all raw CSV files from the data/raw directory.
+1. Load all CSV files from the data/raw directory.
 2. Parse timestamps and numeric values, handling any malformed records.
 3. Resample data to a consistent frequency (e.g., 5 minutes) and pivot to wide format with separate columns for each sensor type and room/appliance.
 4. Engineer additional features such as hour of day, day of week, mean temperature, occupancy count, and total power consumption.
 5. Save the processed datasets to data/processed for downstream modeling.
+Input formats:
+- Format from Phase 1 - Generation: Features engineered, only requires cleaning
+- Format from Phase 2 - MQTT: Requires feature engineering and pivoting
 Output:
 - data/processed/wide_data.csv: The resampled and pivoted dataset in wide format
 Usage:
@@ -28,16 +31,62 @@ raw_dir = os.path.join('data', 'raw')
 proc_dir = os.path.join('data', 'processed')
 os.makedirs(proc_dir, exist_ok=True)
 
-def load_raw_data():
+def detect_format(filepath):
+    df_sample = pd.read_csv(filepath, nrows = 3)
+    cols = df_sample.columns.tolist()
+
+    has_sensor_cols = any(c.startswith('temperature_') for c in cols)
+    has_power_cols = any(c.startswith('power_') for c in cols)
+
+    if has_sensor_cols and has_power_cols:
+        return 'wide'
+    
+    has_long_cols = ('sensor_type' in cols or 'room' in cols)
+    if has_long_cols:
+        return 'long'
+    
+    return 'wide'
+
+def load_wide_format(raw_dir = raw_dir):
+    csv_files = sorted(glob.glob(os.path.join(raw_dir, '*.csv')))
+    if not csv_files:
+        raise FileNotFoundError(f"No CSV files found in {raw_dir}. Please run Phase 1 emulation first to generate data.")
+    logger.info(f"Found {len(csv_files)} raw data files. Loading...")
+
+    df_list = []
+    for file in csv_files:
+        try:
+            df = pd.read_csv(file)
+            df_list.append(df)
+            logger.info(f"Loaded {len(df)} records from {file}")
+        except Exception as e:
+            logger.warning(f"Skipping {file}: {e}")
+        
+    merged_df = pd.concat(df_list, ignore_index=True)
+
+    if 'timestamp' in merged_df.columns:
+        merged_df['timestamp'] = pd.to_datetime(merged_df['timestamp'])
+        merged_df.set_index('timestamp', inplace = True)
+    elif 'Unnamed: 0' in merged_df.columns:
+        merged_df['timestamp'] = pd.to_datetime(merged_df['Unnamed: 0'])
+        merged_df.set_index('timestamp', inplace = True)
+        merged_df.drop(columns=['Unnamed: 0'], error= 'ignore', inplace = True)
+
+    logger.info(f"Total records after preprocessing: {len(merged_df)}\nTime range: {merged_df.index[0]} to {merged_df.index[-1]}")
+    return merged_df
+
+def load_long_format(raw_dir = raw_dir):
     csv_files = glob.glob(os.path.join(raw_dir, '*.csv'))
     if not csv_files:
-        raise FileNotFoundError(f"No CSV files found in {raw_dir}. Please run the emulation first to generate data.")
+        raise FileNotFoundError(f"No CSV files found in {raw_dir}. Please run Phase 2 emulation first to generate data.")
     logger.info(f"Found {len(csv_files)} raw data files. Loading...")
 
     df_list = []
     for file in csv_files:
         try:
             df = pd.read_csv(file, parse_dates=['timestamp'])
+            if 'timestamp' not in df.columns:
+                df.columns = ['timestamp', 'room', 'sensor_type', 'appliance', 'value']
             df_list.append(df)
             logger.info(f"Loaded {len(df)} records from {file}")
         except Exception as e:
@@ -46,7 +95,7 @@ def load_raw_data():
     merged_df = pd.concat(df_list, ignore_index=True)
     merged_df['timestamp'] = pd.to_datetime(merged_df['timestamp'])
     merged_df['values'] = pd.to_numeric(merged_df['value'], errors='coerce')
-
+    
     before_drop = len(merged_df)
     merged_df.dropna(subset=['timestamp', 'values'], inplace=True)
     dropped = before_drop - len(merged_df)
@@ -132,9 +181,19 @@ def engineer_features(df_wide):
 def run_preprocessing(raw_dir=raw_dir, resample_freq='5min', save=True):
 
     logger.info("Phase 3: Data Preprocessing")
+    csv_files = sorted(glob.glob(os.path.join(raw_dir,'*.csv')))
+    if not csv_files:
+        raise FileNotFoundError(f"No CSV files found in {raw_dir}. Please run Phase 1 or Phase 2 emulation first to generate data.")
+    
+    fmt = detect_format(csv_files[0])
+    logger.info(f"Detected format {fmt}")
 
-    df_long = load_raw_data(raw_dir)
-    df_wide = wide_format(df_long, resample_freq)
+    if fmt == 'wide':
+        df_wide = load_wide_format(raw_dir)
+    else:
+        df_long = load_long_format(raw_dir)
+        df_wide = wide_format(df_long, resample_freq)
+    
     df_features = engineer_features(df_wide)
 
     if save:

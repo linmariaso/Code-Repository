@@ -98,7 +98,7 @@ def compare_models(eval_res, y_test):
             comparisons.append(comp)
             sig_string = "Yes" if significant else "No"
 
-            logger.info(f" {name_a} vs {name_b}: t={t_stat:.3f}, p={p_value:.4f} ({sig_string}) | Better: {better})") 
+            logger.info(f" {name_a} vs {name_b}: t={t_stat:.3f}, p={p_value:.4f} ({sig_string}) | Better: {better})")
     return comparisons
 
 def plot_predictions_vs_actual(y_test, eval_res, output_dir = res_dir):
@@ -127,7 +127,7 @@ def plot_residuals(y_test, eval_res, output_dir = res_dir):
     n_models = len(eval_res)
     fig, axes = plt.subplots(2, n_models, figsize=(5 * n_models, 5))
     if n_models == 1:
-        axes = axes.reshape(-1, 1)
+        axes = axes.reshape(2, 1)
     
     for col, (name,res) in enumerate(eval_res.items()):
         residuals = y_test - res['y_pred']
@@ -139,13 +139,13 @@ def plot_residuals(y_test, eval_res, output_dir = res_dir):
         ax.set_xlabel("Residual (W)")
         ax.set_ylabel("Frequency")
         ax.grid(True, alpha=0.3)
-
         ax.text(0.95, 0.95, f"Mean: {residuals.mean():.1f} W\nStd: {residuals.std():.1f} W", transform=ax.transAxes, fontsize=8, verticalalignment='top', horizontalalignment='right', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
-        ax.axes[1,col]
+        
+        ax = axes[1,col]
         ax.scatter(range(len(residuals)), residuals, alpha=0.3, s=3, color='steelblue')
         ax.axhline(0, color='red', linestyle='--', linewidth=1)
         ax.set_xlabel("Simple Index")
-        ax.setylabel("Residual (W)")
+        ax.set_ylabel("Residual (W)")
         ax.set_title(f"{name} Residuals over Time")
         ax.grid(True, alpha=0.3)
 
@@ -210,13 +210,13 @@ def plot_model_comparison(eval_res, output_dir = res_dir):
     plt.close()
     logger.info(f"Saved model comparison bar charts to {output_dir}")
 
-def evaluate_all_models(trained_res, X_test, y_test, save_results = True, output_dir = res_dir):
+def evaluate_all_models(trained_res, X_test, y_test, save_results = True, plot_results = True, output_dir = res_dir):
     logger.info("Starting evaluation of all models")
     logger.info(f"Testing data: {X_test.shape[0]} records, {X_test.shape[1]} features")
     eval_res = {}
     for name, res in trained_res.items():
         metrics = evaluate_model(res['estimator'], X_test, y_test, model_name=name)
-        metrics['best_params'] = res.get['best_params']
+        metrics['best_params'] = res.get('best_params')
         metrics['training_time'] = res.get('training_time')
         eval_res[name] = metrics
 
@@ -224,7 +224,7 @@ def evaluate_all_models(trained_res, X_test, y_test, save_results = True, output
     best_model = max(eval_res, key=lambda n: eval_res[n]['r2'])
     logger.info(f"\nBest overall model: {best_model} with R²={eval_res[best_model]['r2']:.3f}")
 
-    if save:
+    if save_results:
         metrics_rows = []
         for name, res in eval_res.items():
             metrics_rows.append({
@@ -246,7 +246,7 @@ def evaluate_all_models(trained_res, X_test, y_test, save_results = True, output
         df_comparisons.to_csv(os.path.join(output_dir, 'model_comparisons.csv'), index=False)
         logger.info(f"Saved model comparisons to {output_dir}/model_comparisons.csv")
 
-    if plot:
+    if plot_results:
         plot_predictions_vs_actual(y_test, eval_res, output_dir)
         plot_residuals(y_test, eval_res, output_dir)
         plot_model_comparison(eval_res, output_dir)

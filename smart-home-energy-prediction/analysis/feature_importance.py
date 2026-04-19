@@ -69,7 +69,7 @@ def calc_permutation_importance(model, X_test, y_test, feature_names, model_name
 
 def run_permutation_importance(trained_res, X_test, y_test, feature_names):
     logger.info("Running permutation importance")
-    all_importance = []
+    all_importance = {}
 
     for name, res in trained_res.items():
         importance = calc_permutation_importance(res['estimator'], X_test, y_test, feature_names, model_name=name)

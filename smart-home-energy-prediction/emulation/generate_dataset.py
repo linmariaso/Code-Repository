@@ -71,6 +71,6 @@ def generate_dataset():
        record['total_power'] = round(sum(powers.values()),1)
        records.append(record)
        
-       df = pd.DataFrame(records)
-       df.set_index('timestamp', inplace=True)
-       return df
+    df = pd.DataFrame(records)
+    df.set_index('timestamp', inplace=True)
+    return df

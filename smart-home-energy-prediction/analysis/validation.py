@@ -52,7 +52,7 @@ def validate_feature(emulated, real, feature_name, tolerance=validation_toleranc
     emulated_std, real_std = emulated.std(), real.std()
     emulated_min, real_min = emulated.min(), real.min()
     emulated_max, real_max = emulated.max(), real.max()
-    emulated_median, real_median = emulated.median(), real.median()
+    emulated_median, real_median = np.median(emulated), np.median(real)
 
     if real_mean != 0:
         pct_diff = abs(emulated_mean - real_mean) / abs(real_mean) * 100
@@ -190,36 +190,19 @@ def load_kaggle_smart_home(file_path = None):
         logger.error(f"Kaggle Smart Home Dataset not found at {file_path}. Please download and place it there.")
         return None, None
     df = pd.read_csv(file_path, low_memory=False)
-    time_col = None
-    for candidate in ['Time', 'time', 'timestamp', 'date']:
-        df[time_col] = pd.to_datetime(df[time_col], errors='coerce')
-        df.set_index(time_col, inplace=True)
-        df.dropna(how='all', inplace=True)
+    
+    df['time'] = pd.to_datetime(df['time'], format='mixed', errors='coerce')
+    df.set_index('time', inplace=True)
+    df.dropna(how='all', inplace=True)
     for col in df.columns:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
-    power_cols = [col for col in df.columns if 'use' in col.lower() or 'energy' in col.lower() or 'kw' in col.lower() or 'power' in col.lower()]
-    temp_cols = [col for col in df.columns if 'temp' in col.lower() or 'temperature' in col.lower()]
-    rh_cols = [col for col in df.columns if 'hum' in col.lower() or 'humidity' in col.lower()]
+    df['total_power_real'] = df['use [kW]'] * 1000
+    df['mean_temperature_real'] = df['temperature']
+    df['mean_humidity_real'] = df['humidity'] * 100
+    df['hour'] = df.index.hour
 
-    feature_map = {}
-
-    if power_cols:
-        df['total_power_real'] = df[power_cols].sum(axis=1)
-        if df['total_power_real'].mean() < 50:
-            df['total_power_real'] *= 1000
-        feature_map['total_power'] = 'total_power_real'
-
-    if temp_cols:
-        df['mean_temperature_real'] = df[temp_cols].mean(axis=1)
-        feature_map['mean_temperature'] = 'mean_temperature_real'
-
-    if rh_cols:
-        df['mean_humidity_real'] = df[rh_cols].mean(axis=1)
-        feature_map['mean_humidity'] = 'mean_humidity_real'
-    if hasattr(df.index, 'hour'):
-        df['hour'] = df.index.hour
-        feature_map['hour'] = df.index.hour
+    feature_map = {'total_power': 'total_power_real', 'mean_temperature':'mean_temperature_real', 'mean_humidity':'mean_humidity_real', 'hour': 'hour'}
     
     logger.info(f"Loaded Kaggle Smart Home dataset with shape: {df.shape}")
     return df, feature_map
@@ -275,7 +258,7 @@ def plot_validation_summary(all_results, output_path=res_dir):
     ax = axes[0]
     colours = ['red' if w else 'green' for w in df['within_tolerance']]
 
-    y_pos = np.arrange(len(df))
+    y_pos = np.arange(len(df))
     ax.barh(y_pos, df['pct_difference'], color = colours, alpha = 0.8)
     ax.axvline(validation_tolerance * 100, color = 'red', linestyle = '--', label = f'±{validation_tolerance*100:.0f}% tolerance')
     ax.set_yticks(y_pos)
@@ -293,7 +276,9 @@ def plot_validation_summary(all_results, output_path=res_dir):
     ax.set_yticklabels(df['feature'], fontsize = 8)
     ax.set_xlabel("KS Statistic")
     ax.set_title("KS Test (Green = Not Significant, Red = Significantly Different)")
-    ax.legend(fontsize = 8)
+    handles, labels = ax.get_legend_handles_labels()
+    if handles:
+        ax.legend(fontsize=8)
     ax.grid(True, axis= 'x', alpha = 0.3)
     ax.invert_yaxis()
 
@@ -314,7 +299,7 @@ def run_validation(emulated_features_path = None):
     logger.info("Validation against Real World Datasets")
 
     if emulated_features_path is None:
-        emulated_features_path = os.path.join(proc_dir, 'features.csv')
+        emulated_features_path = os.path.join(proc_dir, 'features_data.csv')
     
     if not os.path.exists(emulated_features_path):
         logger.error(f"Emulated Features not found at {emulated_features_path}. Please run preprocessing first.")

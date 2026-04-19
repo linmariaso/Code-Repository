@@ -176,7 +176,7 @@ def phase5_analysis():
     proc_dir = os.path.join('data','processed')
     res_dir = 'results'
 
-    X_train, y_train, X_test, y_test, scaler, feature_cols = load_split(res_dir)
+    X_train, y_train, X_test, y_test, scaler, feature_cols = load_split(proc_dir)
     trained = load_models(res_dir)
 
     print("Permutation Importance Analysis")
@@ -194,7 +194,7 @@ def phase5_analysis():
     print("PHASE 5 COMPLETE")
     for model_name, importance_list in all_importance.items():
         top = importance_list[0]
-        print(f"{model_name}: top feature = {top['feature']} (importance = {top['importance_mean']:.4f})")
+        print(f"{model_name}: top feature = {top['feature']} (importance = {top['mean_importance']:.4f})")
     print(f"\n Results saved to {res_dir}")
     print("="*100)
 
@@ -222,7 +222,7 @@ def phase6_validation():
 
 def main():
     parser = argparse.ArgumentParser( description="Smart Home Energy Prediction - Full pipeline")
-    parser.add_argument('--skip-mqtt', action='store-true', help='Skip Phase 2 MQTT, Using Phase 1 Only')
+    parser.add_argument('--skip-mqtt', action='store_true', help='Skip Phase 2 MQTT, Using Phase 1 Only')
     parser.add_argument('--only', type=int, choices=[1,2,3,4,5,6], default=None, help='Run a single phase')
     parser.add_argument('--start-from', type=int, choices=[1,2,3,4,5,6], default=None, help='Run from a specific phase')
 
@@ -232,7 +232,7 @@ def main():
     if args.only:
         phases = [args.only]
     elif args.start_from:
-        phases = list(range(args.start_from,5))
+        phases = list(range(args.start_from,7))
     elif args.skip_mqtt:
         phases = [1,3,4,5,6]
     else:

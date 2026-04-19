@@ -63,7 +63,7 @@ def train_single_model(name, model, params, X_train, y_train):
             n_combs *= len(param_values)
         total_hits = n_combs * folds
         logger.info(f"Total combinations: {n_combs} | Number of folds: {folds} | Total training runs (with CV): {total_hits}")
-        grid = GridSearchCV(model, params, cv=folds, n_jobs=-1, verbose=1, return_score=True)
+        grid = GridSearchCV(model, params, cv=folds, n_jobs=-1, verbose=1, return_train_score=True)
         grid.fit(X_train, y_train)
 
         elapsed = time.time() - start_time

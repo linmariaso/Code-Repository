@@ -104,17 +104,17 @@ def run_oh_decomposition(trained_res, X_test, y_test, feature_names, repeats = N
             logger.info(f"  Decomposing feature: {feature_name} ({index+1}/{len(feature_names)})")
             result = decompose_feature(res['estimator'], X_test, y_test, feature_index=index, feature_name=feature_name, repeats=repeats)
             result['model'] = model_name
-            model_decomposition.append(result)
-    model_decomposition.sort(key=lambda x: x['total_importance_mean'], reverse=True)
+            decomposition.append(result)
+    decomposition.sort(key=lambda x: x['total_importance_mean'], reverse=True)
     elapsed = time.time() - start
     logger.info(f"Completed Oh decomposition for {model_name} in {elapsed:.1f}s")
 
-    for item in model_decomposition:
+    for item in decomposition:
         logger.info(f"{item['model']} - {item['feature']}: feature_power={item['feature_power_mean']:.4f}, interaction={item['interaction_power_mean']:.4f}, total={item['total_importance_mean']:.4f}, feature_ratio={item['feature_power_ratio']:.2%}")
 
-    decomposition[model_name] = model_decomposition
+    all_decomposition[model_name] = decomposition
     
-    return decomposition
+    return all_decomposition
 
 def plot_decomposition_bars(decomposition, output_path=res_dir):
     n_models = len(decomposition)
@@ -146,7 +146,7 @@ def plot_decomposition_bars(decomposition, output_path=res_dir):
     logger.info(f"Saved Oh decomposition bar plot to {output_path}/oh_decomposition.png")
 
 def plot_decomposition_stacked(decomposition, output_path=res_dir):
-    model_name = list(decomposition.keys())
+    model_name = list(decomposition.keys())[0]
     decomposition_list = decomposition[model_name]
     features = [d['feature'] for d in decomposition_list]
     feature_powers = [d['feature_power_mean'] for d in decomposition_list]
