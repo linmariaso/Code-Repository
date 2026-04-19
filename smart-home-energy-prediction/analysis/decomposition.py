@@ -154,7 +154,7 @@ def plot_decomposition_stacked(decomposition, output_path=res_dir):
 
     y_pos = np.arange(len(features))
 
-    fig, axes = plt.subplots(figsize=( 8, 5))
+    fig, ax = plt.subplots(figsize=( 8, 5))
     ax.barh(y_pos, feature_powers, label='Feature Power (Independent)', color='blue', alpha=0.8)
     ax.barh(y_pos, interaction_powers, left=feature_powers, label='Interaction Power', color='orange', alpha=0.8)
     ax.set_yticks(y_pos)
