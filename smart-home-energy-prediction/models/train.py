@@ -16,6 +16,8 @@ import time
 import pickle
 import logging
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.neural_network import MLPRegressor
@@ -37,11 +39,12 @@ def get_models_and_params():
             'params': {}
         },
         'RandomForest': {
-            'model': RandomForestRegressor(random_state=r_seed, n_jobs=-1),
+            'model': RandomForestRegressor(random_state=r_seed, n_jobs=2),
             'params': {
-                'n_estimators': [100, 200, 500],
-                'max_depth': [10, 20, None],
-                'min_samples_split': [2, 5, 10]
+                'n_estimators': [100, 200],
+                'max_depth': [10, 15, 20],
+                'min_samples_split': [5, 10],
+                'max_samples': [0.5]
             }
         },
         'MLPRegressor': {
@@ -63,7 +66,7 @@ def train_single_model(name, model, params, X_train, y_train):
             n_combs *= len(param_values)
         total_hits = n_combs * folds
         logger.info(f"Total combinations: {n_combs} | Number of folds: {folds} | Total training runs (with CV): {total_hits}")
-        grid = GridSearchCV(model, params, cv=folds, n_jobs=-1, verbose=1, return_train_score=True)
+        grid = GridSearchCV(model, params, cv=folds, scoring='neg_root_mean_squared_error', n_jobs=1, verbose=1, return_train_score=True)
         grid.fit(X_train, y_train)
 
         elapsed = time.time() - start_time

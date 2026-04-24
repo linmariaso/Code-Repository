@@ -159,7 +159,7 @@ def phase4_ml():
     if signif:
         print(f"Significant differences (p<0.05):")
         for col in signif:
-            print(f"{col['Model_A']} vs {col['Moodel_B']}: p={col['p_value']:.4f} → {col['best_model']}")
+            print(f"{col['Model_A']} vs {col['Model_B']}: p={col['p_value']:.4f} → {col['better_model']}")
     best = max(eval_result, key = lambda n:eval_result[n]['r2'])
     print(f"\n Best model: {best} (R² = {eval_result[best]['r2']:.4f})")
     print(f"Results saved to {res_dir}")
