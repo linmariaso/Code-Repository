@@ -1,0 +1,30 @@
+============================================================
+OVERFITTING DIAGNOSTIC REPORT
+============================================================
+
+--- Test 1: Train vs Test Gap ---
+  LinearRegression      Train R²=1.00000  Test R²=0.99974  Gap=0.026%  [NO OVERFITTING]
+  RandomForest          Train R²=0.99922  Test R²=0.99709  Gap=0.213%  [NO OVERFITTING]
+  MLPRegressor          Train R²=1.00000  Test R²=0.99974  Gap=0.026%  [NO OVERFITTING]
+
+--- Test 2: Cross-Validation Stability ---
+  LinearRegression      Mean R²=1.00000  Std=0.00000  [STABLE]
+  RandomForest          Mean R²=0.99802  Std=0.00038  [STABLE]
+  MLPRegressor          Mean R²=1.00000  Std=0.00000  [STABLE]
+
+--- Test 3: LinearRegression Coefficient Analysis ---
+  Non-appliance features effectively zero: True
+  Conclusion: Model correctly identifies appliance power as the predictor.
+
+--- Test 5: Residual Normality ---
+  LinearRegression      Shapiro p=0.000000  Skew=8.0979  Kurt=93.8169  Normal=No
+  RandomForest          Shapiro p=0.000000  Skew=54.3031  Kurt=6271.6737  Normal=No
+  MLPRegressor          Shapiro p=0.000000  Skew=8.1056  Kurt=93.2335  Normal=No
+
+============================================================
+OVERALL CONCLUSION
+============================================================
+  All models show minimal train-test gap (<1%).
+  No evidence of overfitting detected.
+  High R² scores reflect the deterministic relationship
+  between per-appliance power and total consumption.

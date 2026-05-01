@@ -10,6 +10,12 @@ Key steps:
 Input formats:
 - Format from Phase 1 - Generation: Features engineered, only requires cleaning
 - Format from Phase 2 - MQTT: Requires feature engineering and pivoting
+Features:
+- Temporal: hour, day_of_week, is_weekend
+- Environmental: mean_temperature, mean_humidity
+- Behavioural: occupancy_count, active_appliances
+- Per-appliance: power_washing_machine, power_refrigerator, power_television, power_microwave, power_kettle, power_computer, power_dishwasher, power_lighting
+- Target: total_power
 Output:
 - data/processed/wide_data.csv: The resampled and pivoted dataset in wide format
 Usage:
@@ -23,13 +29,15 @@ import glob
 import logging
 import numpy as np
 import pandas as pd
-from config.settings import (anomaly_rate, rooms, appliances, r_seed)
+from config.settings import (rooms, appliances)
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 raw_dir = os.path.join('data', 'raw')
 proc_dir = os.path.join('data', 'processed')
 os.makedirs(proc_dir, exist_ok=True)
+
+appliance_feature_cols = ['power_washing_machine','power_refrigerator','power_television','power_microwave','power_kettle','power_computer','power_dishwasher','power_lighting']
 
 def detect_format(filepath):
     df_sample = pd.read_csv(filepath, nrows = 3)
@@ -72,6 +80,7 @@ def load_wide_format(raw_dir = raw_dir):
         merged_df.set_index('timestamp', inplace = True)
         merged_df.drop(columns=['Unnamed: 0'], error= 'ignore', inplace = True)
 
+    merged_df.sort_index(inplace = True)
     logger.info(f"Total records after preprocessing: {len(merged_df)}\nTime range: {merged_df.index[0]} to {merged_df.index[-1]}")
     return merged_df
 
@@ -170,9 +179,28 @@ def engineer_features(df_wide):
         features['active_appliances'] = 0
         features['total_power'] = 0.0
 
+    for appliance_col in appliance_feature_cols:
+        if appliance_col in df_wide.columns:
+            features[appliance_col] = df_wide[appliance_col].round(1)
+        else:
+            logger.warning(f" Appliance column {appliance_col} not found, setting to 0")
+            features[appliance_col] = 0.0
+
+    if 'total_power' in df_wide.columns:
+        features['total_power'] = df_wide['total_power']
+    elif sp_cols:
+        features['total_power'] = df_wide[sp_cols].sum(axis = 1)
+    else:
+        features['total_power'] = 0.0
+
     features['mean_temperature'] = features['mean_temperature'].round(2)
     features['mean_humidity'] = features['mean_humidity'].round(2)
     features['total_power'] = features['total_power'].round(1)
+
+    before = len(features)
+    features.dropna(inplace=True)
+    if len(features) < before:
+        logger.warning(f"  Dropped {before - len(features)} rows with NaN values")
 
     logger.info(f"Feature engineering complete. Dataset now has {features.shape[1]} columns and {features.shape[0]} rows.")
     logger.info(f"Total power mean: {features['total_power'].mean():.1f} | Power mean: {features['total_power'].max():.1f} Power min: {features['total_power'].min():.1f}")

@@ -135,6 +135,7 @@ def phase4_ml():
     from pipeline.split import load_split
     from models.train import train_all_models, save_models
     from models.evaluate import evaluate_all_models
+    from models.overfitting_test import run_overfit_diagnostics
 
     proc_dir = os.path.join('data','processed')
     res_dir = 'results'
@@ -163,6 +164,7 @@ def phase4_ml():
     best = max(eval_result, key = lambda n:eval_result[n]['r2'])
     print(f"\n Best model: {best} (R² = {eval_result[best]['r2']:.4f})")
     print(f"Results saved to {res_dir}")
+    overfit_res = run_overfit_diagnostics(trained, X_train, y_train, X_test, y_test, feature_cols)
     print("="*100)
 
 def phase5_analysis():
