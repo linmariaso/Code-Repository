@@ -42,7 +42,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-PROCESSED_DIR = os.path.join('data', 'processed')
+proc_dir = os.path.join('data', 'processed')
 res_dir = 'results'
 os.makedirs(res_dir, exist_ok=True)
 
@@ -615,7 +615,7 @@ if __name__ == '__main__':
 
     print("Loading data and models...")
     X_train, X_test, y_train, y_test, scaler, feature_cols = \
-        load_splits(PROCESSED_DIR)
+        load_splits(proc_dir)
     trained = load_trained_models(res_dir)
 
     print(f"Train: {X_train.shape}, Test: {X_test.shape}")
