@@ -65,7 +65,7 @@ def evaluate_model(model, X_test, y_test, model_name = 'Model'):
     }
 
 def compare_models(eval_res, y_test):
-    logger.info("\nStatistical comparison (paired t-tests)")
+    logger.info("Statistical comparison (paired t-tests)")
 
     model_names = list(eval_res.keys())
     comparisons = []
@@ -222,7 +222,7 @@ def evaluate_all_models(trained_res, X_test, y_test, save_results = True, plot_r
 
     comparisons = compare_models(eval_res, y_test)
     best_model = max(eval_res, key=lambda n: eval_res[n]['r2'])
-    logger.info(f"\nBest overall model: {best_model} with R²={eval_res[best_model]['r2']:.3f}")
+    logger.info(f"Best overall model: {best_model} with R²={eval_res[best_model]['r2']:.3f}")
 
     if save_results:
         metrics_rows = []

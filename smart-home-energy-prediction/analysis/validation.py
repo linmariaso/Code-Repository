@@ -25,6 +25,8 @@ import os
 import logging
 import numpy as np
 import pandas as pd
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from scipy.stats import ks_2samp, describe
 from config.settings import validation_tolerance, significance
@@ -34,9 +36,13 @@ logger = logging.getLogger(__name__)
 
 proc_dir = os.path.join('data', 'processed')
 val_dir = os.path.join('data', 'validation')
+raw_dir = os.path.join('data', 'raw')
 res_dir = os.path.join('results')
 os.makedirs(res_dir, exist_ok=True)
 os.makedirs(val_dir, exist_ok=True)
+
+day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+day_colours = ['orangered', 'steelblue', 'forestgreen', 'purple', 'gold', 'lightseagreen', 'palevioletred']
 
 def validate_feature(emulated, real, feature_name, tolerance=validation_tolerance):
     """Validate a single feature by comparing emulated and real data.
@@ -256,7 +262,7 @@ def plot_validation_summary(all_results, output_path=res_dir):
     fig, axes = plt.subplots( 1, 2, figsize = (12, 5))
 
     ax = axes[0]
-    colours = ['red' if w else 'green' for w in df['within_tolerance']]
+    colours = ['green' if w else 'red' for w in df['within_tolerance']]
 
     y_pos = np.arange(len(df))
     ax.barh(y_pos, df['pct_difference'], color = colours, alpha = 0.8)
@@ -287,6 +293,235 @@ def plot_validation_summary(all_results, output_path=res_dir):
     plt.savefig(os.path.join(output_path, 'validation_summary.png'), dpi = 150)
     plt.close()
     logger.info(f"Saved Validation Summary to {output_path}")
+
+
+def compute_daily_stats(df):
+    """Compute per-day statistics for power and occupancy."""
+    stats = []
+    for d in range(7):
+        day_data = df[df['day_of_week'] == d]
+        stat = {
+            'day_number': d,
+            'day_name': day_names[d],
+            'is_weekend': 'Weekend' if d >= 5 else 'Weekday',
+            'record_count': len(day_data),
+            'power_mean': round(day_data['total_power'].mean(), 1),
+            'power_std': round(day_data['total_power'].std(), 1),
+            'power_median': round(day_data['total_power'].median(), 1),
+            'power_min': round(day_data['total_power'].min(), 1),
+            'power_max': round(day_data['total_power'].max(), 1),
+        }
+
+        if 'occupancy_count' in day_data.columns:
+            stat['occupancy_mean'] = round(day_data['occupancy_count'].mean(), 2)
+            stat['occupancy_std'] = round(day_data['occupancy_count'].std(), 2)
+
+        if 'active_appliances' in day_data.columns:
+            stat['active_appliances_mean'] = round(day_data['active_appliances'].mean(), 2)
+
+        if 'mean_temperature' in day_data.columns:
+            stat['temperature_mean'] = round(day_data['mean_temperature'].mean(), 2)
+
+        stats.append(stat)
+
+    return pd.DataFrame(stats)
+
+
+def plot_daily_power(df, output_dir=res_dir):
+    """Bar chart comparing mean power consumption per day."""
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    fig.suptitle('7-Day Power Consumption Analysis', fontsize=13)
+
+    ax = axes[0]
+    means = []
+    stds = []
+    for d in range(7):
+        day_data = df[df['day_of_week'] == d]['total_power']
+        means.append(day_data.mean())
+        stds.append(day_data.std())
+
+    x = np.arange(7)
+    bars = ax.bar(x, means, yerr=stds, color=day_colours, alpha=0.8,
+                  capsize=4, edgecolor='white')
+    ax.set_xticks(x)
+    ax.set_xticklabels(day_names, rotation=45, ha='right', fontsize=9)
+    ax.set_ylabel('Mean Total Power (W)')
+    ax.set_title('Mean Power Consumption by Day')
+    ax.grid(True, alpha=0.3, axis='y')
+
+    for bar, mean in zip(bars, means):
+        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height(),
+                f'{mean:.1f}W', ha='center', va='bottom', fontsize=8)
+
+    weekday_mean = np.mean(means[:5])
+    weekend_mean = np.mean(means[5:])
+    ax.axhline(weekday_mean, color='#4C72B0', linestyle='--', alpha=0.6,
+               label=f'Weekday avg ({weekday_mean:.1f}W)')
+    ax.axhline(weekend_mean, color='#C44E52', linestyle='--', alpha=0.6,
+               label=f'Weekend avg ({weekend_mean:.1f}W)')
+    ax.legend(fontsize=8)
+
+    ax = axes[1]
+    day_groups = [df[df['day_of_week'] == d]['total_power'].values for d in range(7)]
+    bp = ax.boxplot(day_groups, labels=day_names, patch_artist=True,
+                    showfliers=False, medianprops=dict(color='black'))
+    for patch, colour in zip(bp['boxes'], day_colours):
+        patch.set_facecolor(colour)
+        patch.set_alpha(0.7)
+    ax.set_xticklabels(day_names, rotation=45, ha='right', fontsize=9)
+    ax.set_ylabel('Total Power (W)')
+    ax.set_title('Power Distribution by Day')
+    ax.grid(True, alpha=0.3, axis='y')
+
+    plt.tight_layout()
+    path = os.path.join(output_dir, 'daily_power_comparison.png')
+    plt.savefig(path, dpi=150)
+    plt.close()
+    logger.info(f"Saved: {path}")
+
+
+def plot_daily_occupancy(df, output_dir=res_dir):
+    """Bar chart comparing mean occupancy per day."""
+    if 'occupancy_count' not in df.columns:
+        logger.warning("No occupancy_count column, skipping occupancy plot")
+        return
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    means = []
+    stds = []
+    for d in range(7):
+        day_data = df[df['day_of_week'] == d]['occupancy_count']
+        means.append(day_data.mean())
+        stds.append(day_data.std())
+
+    x = np.arange(7)
+    bars = ax.bar(x, means, yerr=stds, color=day_colours, alpha=0.8,
+                  capsize=4, edgecolor='white')
+    ax.set_xticks(x)
+    ax.set_xticklabels(day_names, rotation=45, ha='right', fontsize=9)
+    ax.set_ylabel('Mean Occupancy Count')
+    ax.set_title('Mean Occupancy by Day of Week')
+    ax.grid(True, alpha=0.3, axis='y')
+
+    for bar, mean in zip(bars, means):
+        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height(),
+                f'{mean:.2f}', ha='center', va='bottom', fontsize=8)
+
+    weekday_mean = np.mean(means[:5])
+    weekend_mean = np.mean(means[5:])
+    ax.axhline(weekday_mean, color='#4C72B0', linestyle='--', alpha=0.6,
+               label=f'Weekday avg ({weekday_mean:.2f})')
+    ax.axhline(weekend_mean, color='#C44E52', linestyle='--', alpha=0.6,
+               label=f'Weekend avg ({weekend_mean:.2f})')
+    ax.legend(fontsize=8)
+
+    plt.tight_layout()
+    path = os.path.join(output_dir, 'daily_occupancy_comparison.png')
+    plt.savefig(path, dpi=150)
+    plt.close()
+    logger.info(f"Saved: {path}")
+
+
+def plot_hourly_by_day(df, output_dir=res_dir):
+    """Hourly power profile overlaid for each day of the week."""
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    fig.suptitle('Hourly Profiles by Day of Week', fontsize=13)
+
+    ax = axes[0]
+    for d in range(7):
+        day_data = df[df['day_of_week'] == d]
+        hourly = day_data.groupby('hour')['total_power'].mean()
+        linestyle = '--' if d >= 5 else '-'
+        alpha = 1.0 if d >= 5 else 0.6
+        ax.plot(hourly.index, hourly.values, linestyle=linestyle,
+                alpha=alpha, label=day_names[d], marker='o', markersize=3)
+
+    ax.set_xlabel('Hour of Day')
+    ax.set_ylabel('Mean Total Power (W)')
+    ax.set_title('Power Profile by Day')
+    ax.legend(fontsize=7, ncol=2)
+    ax.grid(True, alpha=0.3)
+
+    ax = axes[1]
+    weekday_data = df[df['is_weekend'] == 0]
+    weekend_data = df[df['is_weekend'] == 1]
+
+    for d in range(5):
+        day_data = df[df['day_of_week'] == d]
+        hourly = day_data.groupby('hour')['total_power'].mean()
+        ax.plot(hourly.index, hourly.values, color='#4C72B0', alpha=0.15, linewidth=1)
+    for d in range(5, 7):
+        day_data = df[df['day_of_week'] == d]
+        hourly = day_data.groupby('hour')['total_power'].mean()
+        ax.plot(hourly.index, hourly.values, color='#C44E52', alpha=0.15, linewidth=1)
+
+    wd_hourly = weekday_data.groupby('hour')['total_power'].mean()
+    we_hourly = weekend_data.groupby('hour')['total_power'].mean()
+    ax.plot(wd_hourly.index, wd_hourly.values, color='#4C72B0',
+            linewidth=2.5, label='Weekday avg', marker='o', markersize=4)
+    ax.plot(we_hourly.index, we_hourly.values, color='#C44E52',
+            linewidth=2.5, label='Weekend avg', marker='s', markersize=4)
+
+    ax.set_xlabel('Hour of Day')
+    ax.set_ylabel('Mean Total Power (W)')
+    ax.set_title('Weekday vs Weekend (with individual days)')
+    ax.legend(fontsize=8)
+    ax.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    path = os.path.join(output_dir, 'hourly_by_day.png')
+    plt.savefig(path, dpi=150)
+    plt.close()
+    logger.info(f"Saved: {path}")
+
+
+def run_temporal_analysis(df, output_dir=res_dir):
+    """Run the complete 7-day temporal pattern analysis.
+    
+    Args:
+        df: DataFrame with day_of_week, is_weekend, hour, 
+            total_power, occupancy_count columns
+        output_dir: where to save plots and CSV
+    
+    Returns:
+        DataFrame with per-day statistics
+    """
+    logger.info("Running temporal pattern analysis (7-day cycle)")
+
+    stats = compute_daily_stats(df)
+
+    # Log summary
+    weekday_stats = stats[stats['is_weekend'] == 'Weekday']
+    weekend_stats = stats[stats['is_weekend'] == 'Weekend']
+    wd_mean = weekday_stats['power_mean'].mean()
+    we_mean = weekend_stats['power_mean'].mean()
+    pct_diff = abs(wd_mean - we_mean) / wd_mean * 100
+
+    logger.info(f"Weekday average power: {wd_mean:.1f}W")
+    logger.info(f"Weekend average power: {we_mean:.1f}W")
+    logger.info(f"Weekday-weekend difference: {pct_diff:.1f}%")
+
+    weekday_range = weekday_stats['power_mean'].max() - weekday_stats['power_mean'].min()
+    logger.info(f"Weekday range (Mon-Fri): {weekday_range:.1f}W")
+
+    if weekday_range < 5:
+        logger.info("Individual weekdays show minimal variation — "
+                     "weekday/weekend grouping captures the main temporal effect.")
+    else:
+        logger.info("Some variation between individual weekdays detected.")
+
+    # Save CSV
+    csv_path = os.path.join(output_dir, 'temporal_analysis.csv')
+    stats.to_csv(csv_path, index=False)
+    logger.info(f"Saved temporal analysis to {csv_path}")
+
+    # Generate plots
+    plot_daily_power(df, output_dir)
+    plot_daily_occupancy(df, output_dir)
+    plot_hourly_by_day(df, output_dir)
+
+    return stats
 
 def save_results(all_results, output_path = res_dir):
     df = pd.DataFrame(all_results)
@@ -340,6 +575,27 @@ def run_validation(emulated_features_path = None):
 
     ks_similar = sum(1 for r in all_results if not r['ks_significant'])
     logger.info(f"KS test not significant (similar): {ks_similar}/{total}")
+
+    logger.info("\nRunning 7-day temporal pattern analysis...")
+    
+    raw_files = [f for f in os.listdir(raw_dir) if f.endswith('.csv')]
+    if raw_files:
+        df_raw = pd.read_csv(os.path.join(raw_dir, raw_files[0]))
+        if 'timestamp' in df_raw.columns:
+            df_raw['timestamp'] = pd.to_datetime(df_raw['timestamp'])
+            df_raw.set_index('timestamp', inplace=True)
+        temporal_stats = run_temporal_analysis(df_raw, res_dir)
+
+        # Print temporal summary
+        print("\n7-Day Power Consumption Summary:")
+        print(f"{'Day':<12} {'Type':<10} {'Mean (W)':>10} {'Std (W)':>10}")
+        print("-" * 44)
+        for _, row in temporal_stats.iterrows():
+            print(f"{row['day_name']:<12} {row['is_weekend']:<10} "
+                  f"{row['power_mean']:>10.1f} {row['power_std']:>10.1f}")
+    else:
+        logger.warning("No raw data files found for temporal analysis")
+
 
     return all_results
 
